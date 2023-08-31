@@ -40,7 +40,10 @@ func main() {
 	}
 	defer f.Close()
 
-	err = png.Encode(f, img)
+	enc := &png.Encoder{ // Disabling compression in the encoder to speed up encoding
+		CompressionLevel: png.NoCompression, 
+	}
+	err = enc.Encode(f, img) // Write image data to file
 	if err != nil {
 		fmt.Println(err)
 		return
