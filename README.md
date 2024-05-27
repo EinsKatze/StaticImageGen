@@ -1,3 +1,3 @@
 # StaticImageGen
 
-This program generates colorised static noise images
+This program generates static noise images
