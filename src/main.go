@@ -9,20 +9,18 @@ import (
 	"math/rand"
 	"os"
 	"sync"
-	"time"
 )
 
 var progress int
 
 func genPixels(start int, end int, width int, img *image.NRGBA, maxProg int, wg *sync.WaitGroup) {
 	defer wg.Done()
-	randGen := rand.New(rand.NewSource(time.Now().Unix())) // Seed the random generator, to speed it up when calling it often. (We call it often)
 	for y := start; y < end; y++ {
 		for x := 0; x < width; x++ {
 			img.Set(x, y, color.RGBA{
-				uint8(randGen.Intn(255)),
-				uint8(randGen.Intn(255)),
-				uint8(randGen.Intn(255)),
+				uint8(rand.Intn(255)),
+				uint8(rand.Intn(255)),
+				uint8(rand.Intn(255)),
 				255})
 		}
 		progress += width
@@ -40,6 +38,7 @@ func main() {
 	flag.IntVar(&height, "h", 64, "Specify height. Default: 64")                     // Console arg for height
 	flag.StringVar(&fileName, "f", "img.png", "Specify file name. Default: img.png") // Console arg for file name
 	flag.Parse()
+
 	maxProg := width * height // Max Progress
 
 	img := image.NewNRGBA(image.Rect(0, 0, width, height))
