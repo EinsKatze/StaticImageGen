@@ -4,27 +4,24 @@ import (
 	"flag"
 	"fmt"
 	"image"
-	"image/color"
 	"image/png"
 	"math/rand"
 	"os"
+	"runtime"
 	"sync"
 )
 
 var progress int
 
-func genPixels(start int, end int, width int, img *image.NRGBA, maxProg int, wg *sync.WaitGroup) {
+func genPixels(start int, end int, width int, img *image.NRGBA, wg *sync.WaitGroup) {
 	defer wg.Done()
 	for y := start; y < end; y++ {
 		for x := 0; x < width; x++ {
-			img.Set(x, y, color.RGBA{
-				uint8(rand.Intn(255)),
-				uint8(rand.Intn(255)),
-				uint8(rand.Intn(255)),
-				255})
+			img.Pix[x*4+y*img.Stride] = uint8(rand.Intn(255))
+			img.Pix[x*4+y*img.Stride+1] = uint8(rand.Intn(255))
+			img.Pix[x*4+y*img.Stride+2] = uint8(rand.Intn(255))
+			img.Pix[x*4+y*img.Stride+3] = 255
 		}
-		progress += width
-		fmt.Printf("%d/%d pixels generated.\r", progress, maxProg)
 	}
 }
 
@@ -39,21 +36,18 @@ func main() {
 	flag.StringVar(&fileName, "f", "img.png", "Specify file name. Default: img.png") // Console arg for file name
 	flag.Parse()
 
-	maxProg := width * height // Max Progress
-
 	img := image.NewNRGBA(image.Rect(0, 0, width, height))
 
-	// Multi-threading the number generation, might reduce speed on old cpus (?), but overall should improve speed.
-	// We could do this on all available threads, but in my case, too many threads reduce the speed instead of increasing it
-	rowsPerWorker := height / 4
-	for i := 0; i < 4; i++ {
+	// Multi-threading the number generation, might reduce speed on some configurations (?), but overall should improve speed.
+	rowsPerWorker := height / runtime.NumCPU()
+	for i := 0; i < runtime.NumCPU(); i++ {
 		startY := i * rowsPerWorker
 		endY := startY + rowsPerWorker
-		if i == 3 { // Special case for the last worker to cover any remaining rows
+		if i == runtime.NumCPU()-1 { // Special case for the last worker to cover any remaining rows
 			endY = height
 		}
-		wg.Add(1)                                            // Increment the wait group to track the number of active workers
-		go genPixels(startY, endY, width, img, maxProg, &wg) // Launch a goroutine to generate pixels for the specified rows
+		wg.Add(1)                                   // Increment the wait group to track the number of active workers
+		go genPixels(startY, endY, width, img, &wg) // Launch a goroutine to generate pixels for the specified rows
 	}
 
 	f, err := os.Create(fileName) // Create the file, where the img data should be written to
